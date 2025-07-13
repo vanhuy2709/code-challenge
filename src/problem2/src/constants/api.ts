@@ -1,0 +1,1 @@
+export const API_TOKEN_INFO = "https://interview.switcheo.com/prices.json";
