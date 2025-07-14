@@ -1,20 +1,14 @@
-import { useEffect, useState } from "react"
-import { fetchData, type FetchResult } from "@utils/fetch"
-import { API_TOKEN_INFO } from "@constants/api";
+import { useMemo } from "react";
+import { getTokenIcon, type TCurrency } from "@constants/token";
 
 type CurrencyInputProps = {
-  label: string
-  value: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  currency: string
-  onCurrencyChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void
-  readOnly?: boolean
-}
-
-type TCurrency = {
+  label: string;
+  value: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   currency: string;
-  date: Date;
-  price: number;
+  onCurrencyChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  readOnly?: boolean;
+  currencies: TCurrency[];
 };
 
 const CurrencyInput: React.FC<CurrencyInputProps> = ({
@@ -24,60 +18,48 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   currency,
   onCurrencyChange,
   readOnly = false,
+  currencies,
 }) => {
-  const [currencies, setCurrencies] = useState<FetchResult<Array<TCurrency>>>({
-    loading: true,
-    data: null,
-    error: null,
-  });
-
-  useEffect(() => {
-    const loadCurrencies = async () => {
-      const result = await fetchData(async () => {
-        const res = await fetch(API_TOKEN_INFO);
-        if (!res.ok) throw new Error('Failed to fetch currencies');
-        return res.json();
-      })
-
-      setCurrencies(result)
-    }
-
-    loadCurrencies();
-  }, [])
-
-  if (currencies.loading) return <p>Loading...</p>
-  if (currencies.error) return <p className="text-red-400">Error: {currencies.error.message}</p>
+  const icon = useMemo(() => {
+    const exists = currencies.some((item) => item.currency === currency);
+    return exists ? getTokenIcon(currency) : null;
+  }, [currency, currencies]);
 
   return (
     <div className="mb-4">
       <label className="block mb-1 font-medium text-gray-700">{label}</label>
-      <div className="flex items-center border rounded-lg px-3 py-2">
+      <div className="flex items-center border rounded-lg px-3 py-2 relative">
         <input
           type="text"
           value={value}
           onChange={onChange}
           readOnly={readOnly}
           className="flex-1 outline-none text-lg font-medium bg-transparent"
+          inputMode="decimal"
         />
+
+        {icon && (
+          <img
+            src={icon}
+            alt={currency}
+            className="w-4 h-4 absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
+        )}
+
         <select
-          className="ml-2 bg-transparent text-sm font-medium focus:outline-none"
+          className="ml-2 bg-transparent text-sm font-medium focus:outline-none pl-5 pr-2"
           value={currency}
           onChange={onCurrencyChange}
         >
-          {currencies.data && currencies.data.map((item, idx) => {
-            return (
-              <option
-                key={item.currency + idx}
-                value={item.currency}
-              >
-                {item.currency}
-              </option>
-            )
-          })}
+          {currencies.map((item, idx) => (
+            <option key={item.currency + idx} value={item.currency}>
+              {item.currency}
+            </option>
+          ))}
         </select>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default CurrencyInput
+export default CurrencyInput;
